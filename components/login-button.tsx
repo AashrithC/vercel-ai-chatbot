@@ -1,51 +1,50 @@
 'use client'
 
-import * as React from 'react'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
+import { IconGitHub } from '@/components/ui/icons'
 
-import { cn } from '@/lib/utils'
-import { Button, type ButtonProps } from '@/components/ui/button'
-import { IconGitHub, IconSpinner } from '@/components/ui/icons'
-
-interface LoginButtonProps extends ButtonProps {
-  showGithubIcon?: boolean
-  text?: string
-}
-
-export function LoginButton({
-  text = 'Login with GitHub',
-  showGithubIcon = true,
-  className,
-  ...props
-}: LoginButtonProps) {
-  const [isLoading, setIsLoading] = React.useState(false)
-  // Create a Supabase client configured to use cookies
+export function LoginButton() {
+  const [isLoading, setIsLoading] = useState(false)
   const supabase = createClient()
 
-  if (process.env.NEXT_PUBLIC_AUTH_GITHUB !== 'true') {
-    return null
+  const handleGitHubLogin = async () => {
+    try {
+      setIsLoading(true)
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        toast.error(error.message)
+      }
+    } catch (error) {
+      console.error('Error during GitHub login:', error)
+      toast.error('An unexpected error occurred')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <Button
-      variant="outline"
-      onClick={async () => {
-        setIsLoading(true)
-        await supabase.auth.signInWithOAuth({
-          provider: 'github',
-          options: { redirectTo: `${location.origin}/api/auth/callback` }
-        })
-      }}
+    <Button 
+      variant="outline" 
+      className="w-full" 
+      onClick={handleGitHubLogin}
       disabled={isLoading}
-      className={cn(className)}
-      {...props}
     >
       {isLoading ? (
-        <IconSpinner className="mr-2 animate-spin" />
-      ) : showGithubIcon ? (
-        <IconGitHub className="mr-2" />
-      ) : null}
-      {text}
+        <span className="mr-2 h-4 w-4 animate-spin">◌</span>
+      ) : (
+        <IconGitHub className="mr-2 h-4 w-4" />
+      )}
+      Continue with GitHub
     </Button>
   )
 }

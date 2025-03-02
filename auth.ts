@@ -2,6 +2,15 @@ import 'server-only'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 
+// List of expected error messages that shouldn't be logged as errors
+const EXPECTED_AUTH_ERRORS = [
+  'Auth session missing!',
+  'Invalid JWT',
+  'JWT expired',
+  'User not found',
+  'Session not found'
+]
+
 export const auth = async ({
   cookieStore
 }: {
@@ -17,7 +26,11 @@ export const auth = async ({
     
     // Check for errors including AuthSessionMissingError
     if (error) {
-      console.log('Auth error:', error.message)
+      // Only log unexpected errors
+      if (!EXPECTED_AUTH_ERRORS.some(msg => error.message.includes(msg))) {
+        console.log('Auth error:', error.message)
+      }
+      
       // Return null instead of throwing the error
       return null
     }
@@ -25,7 +38,11 @@ export const auth = async ({
     // Return the verified user data
     return data
   } catch (err) {
-    console.error('Unexpected auth error:', err)
+    // Only log unexpected errors
+    if (err instanceof Error && !EXPECTED_AUTH_ERRORS.some(msg => err.message.includes(msg))) {
+      console.error('Unexpected auth error:', err)
+    }
+    
     // Return null for any unexpected errors
     return null
   }

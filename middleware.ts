@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
   if (
     !user &&
     !req.url.includes('/sign-in') &&
-    !req.url.includes('/sign-up')
+    !req.url.includes('/signup')
   ) {
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = '/sign-in'
