@@ -31,8 +31,18 @@ export function UserMenu({ user }: UserMenuProps) {
   const supabase = createClient()
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    router.refresh()
+    try {
+      // Sign out of Supabase auth
+      await supabase.auth.signOut()
+      
+      // Navigate to sign-in page instead of refreshing
+      // This provides a cleaner transition and prevents race conditions
+      router.push('/sign-in')
+    } catch (error) {
+      console.error('Error signing out:', error)
+      // Refresh as fallback if navigation fails
+      router.refresh()
+    }
   }
 
   return (
