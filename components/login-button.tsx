@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/utils/supabase/client'
 
 import { cn } from '@/lib/utils'
 import { Button, type ButtonProps } from '@/components/ui/button'
@@ -20,7 +20,7 @@ export function LoginButton({
 }: LoginButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false)
   // Create a Supabase client configured to use cookies
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   if (process.env.NEXT_PUBLIC_AUTH_GITHUB !== 'true') {
     return null

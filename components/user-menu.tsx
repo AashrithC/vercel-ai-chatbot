@@ -1,8 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { type Session } from '@supabase/auth-helpers-nextjs'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { type Session } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
@@ -28,7 +28,7 @@ export function UserMenu({ user }: UserMenuProps) {
   const router = useRouter()
 
   // Create a Supabase client configured to use cookies
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const signOut = async () => {
     await supabase.auth.signOut()

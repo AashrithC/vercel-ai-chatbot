@@ -1,6 +1,6 @@
 import 'server-only'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
+import { createClient } from '@/utils/supabase/server'
 
 export const auth = async ({
   cookieStore
@@ -8,10 +8,13 @@ export const auth = async ({
   cookieStore: ReturnType<typeof cookies>
 }) => {
   // Create a Supabase client configured to use cookies
-  const supabase = createServerComponentClient({
-    cookies: () => cookieStore
-  })
-  const { data, error } = await supabase.auth.getSession()
+  const supabase = createClient()
+  
+  // Use getUser() instead of getSession() for better security
+  // getUser() verifies with the Supabase Auth server every time
+  const { data, error } = await supabase.auth.getUser()
   if (error) throw error
-  return data.session
+  
+  // Return the verified user instead of the session
+  return data
 }
