@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import { type Session } from '@supabase/supabase-js'
-import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
@@ -14,9 +13,11 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { IconExternalLink } from '@/components/ui/icons'
+import { useAuth } from '@/contexts/auth-context'
 
+// Keep the props interface for backward compatibility
 export interface UserMenuProps {
-  user: Session['user']
+  user?: Session['user']
 }
 
 function getUserInitials(name: string) {
@@ -24,26 +25,15 @@ function getUserInitials(name: string) {
   return lastName ? `${firstName[0]}${lastName[0]}` : firstName.slice(0, 2)
 }
 
-export function UserMenu({ user }: UserMenuProps) {
+export function UserMenu({ user: propUser }: UserMenuProps = {}) {
+  const { user: contextUser, signOut } = useAuth()
   const router = useRouter()
+  
+  // Use the prop user if provided, otherwise use the context user
+  const user = propUser || contextUser
 
-  // Create a Supabase client configured to use cookies
-  const supabase = createClient()
-
-  const signOut = async () => {
-    try {
-      // Sign out of Supabase auth
-      await supabase.auth.signOut()
-      
-      // Navigate to sign-in page instead of refreshing
-      // This provides a cleaner transition and prevents race conditions
-      router.push('/sign-in')
-    } catch (error) {
-      console.error('Error signing out:', error)
-      // Refresh as fallback if navigation fails
-      router.refresh()
-    }
-  }
+  // If no user is available, don't render anything
+  if (!user) return null
 
   return (
     <div className="flex items-center justify-between">

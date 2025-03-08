@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
 
 export function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -17,6 +18,30 @@ export function SignUpForm() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { refreshSession } = useAuth()
+
+  // Check if email exists without creating an account
+  const checkEmailExists = async (email: string) => {
+    try {
+      // Using the signIn method with wrong password is a way to check if email exists
+      // This is not ideal but it's a workaround since Supabase doesn't have a direct "check email exists" method
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'temporary-check-password', // This will fail if email exists
+      })
+
+      // If the error is "Invalid login credentials" then the email exists
+      // Any other error means the email doesn't exist or something else went wrong
+      if (error && error.message.includes('Invalid login credentials')) {
+        return true
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Error checking email:', error)
+      return false
+    }
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +65,17 @@ export function SignUpForm() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // Check if email already exists
+      const emailExists = await checkEmailExists(email)
+      if (emailExists) {
+        setError("An account with this email already exists. Please sign in instead.")
+        toast.error("Email already in use")
+        setIsLoading(false)
+        return
+      }
+
+      // Proceed with signup
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -48,14 +83,24 @@ export function SignUpForm() {
         },
       })
 
-      if (error) {
-        setError(error.message)
-        toast.error(error.message)
+      if (signUpError) {
+        let errorMessage = signUpError.message
+        
+        // Replace technical error messages with user-friendly ones
+        if (errorMessage.includes('already registered')) {
+          errorMessage = 'This email is already registered. Please sign in instead.'
+        }
+        
+        setError(errorMessage)
+        toast.error(errorMessage)
         return
       }
 
       toast.success('Check your email for the confirmation link!')
       router.push('/auth-confirmation')
+      
+      // Refresh session after successful signup
+      refreshSession()
     } catch (error) {
       console.error('Error during sign up:', error)
       setError('An unexpected error occurred')
@@ -107,7 +152,7 @@ export function SignUpForm() {
         />
       </div>
       {error && (
-        <div className="text-sm text-red-500">
+        <div className="rounded-md bg-red-50 p-2 text-sm text-red-500">
           {error}
         </div>
       )}

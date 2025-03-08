@@ -8,6 +8,7 @@ import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 
 export function PasswordLoginForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -16,6 +17,7 @@ export function PasswordLoginForm() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { refreshSession } = useAuth()
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,13 +31,24 @@ export function PasswordLoginForm() {
       })
 
       if (error) {
-        setError(error.message)
-        toast.error(error.message)
+        let errorMessage = error.message
+        
+        // Transform error messages to be more user-friendly
+        if (errorMessage.includes('Invalid login credentials')) {
+          errorMessage = 'Incorrect email or password. Please try again.'
+        } else if (errorMessage.includes('Email not confirmed')) {
+          errorMessage = 'Please verify your email address before signing in.'
+        }
+        
+        setError(errorMessage)
+        toast.error(errorMessage)
         return
       }
 
+      // Refresh the auth context session
+      await refreshSession()
+      
       toast.success('Signed in successfully!')
-      router.refresh()
       router.push('/')
     } catch (error) {
       console.error('Error during sign in:', error)
@@ -78,7 +91,7 @@ export function PasswordLoginForm() {
         />
       </div>
       {error && (
-        <div className="text-sm text-red-500">
+        <div className="rounded-md bg-red-50 p-2 text-sm text-red-500">
           {error}
         </div>
       )}
